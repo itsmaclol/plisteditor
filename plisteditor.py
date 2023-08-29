@@ -70,6 +70,7 @@ def set_entry(plist_path, entry_path, entry_type, value, silent=False):
         
         existing_type = type(current_dict[entry_keys[-1]]).__name__
         
+        
         if entry_type == "string":
             current_dict[entry_keys[-1]] = value  # Directly set as a string without type conversion
         elif entry_type == "data":
