@@ -1,7 +1,8 @@
 # CLI Plist Editor in Python3
 
 # Installation
-The script can either be found here on this github repo or [on my cdn](https://cdn.itsmac.eu.org/plisteditor.py)
+You can either clone this repo by
+`git clone https://github.com/itsmaclol/plisteditor.git` or download the script from the repo, or download the script from [my cdn](https://cdn.itsmac.eu.org/plisteditor.py)
 
 # Examples
 Adding a new plist entry:
@@ -20,5 +21,8 @@ Changing an exising plist entry to another type:
 ```
 python3 plisteditor.py change path.to.plist.entry --new_type type_of_plist_entry --path path/to/plist/file.plist
 ```
+
+# Flags
+The `-s` flag can be used to make the script not output a message after its done running
 
 Made with <3 by Mac
