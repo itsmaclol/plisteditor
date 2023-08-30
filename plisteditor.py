@@ -41,7 +41,7 @@ def add_entry(plist_path, entry_path, entry_type, silent=False):
         elif entry_type == "number":
             current_dict[entry_keys[-1]] = 0
         elif entry_type == "data":
-            current_dict[entry_keys[-1]] = ""
+            current_dict[entry_keys[-1]] = b""
         elif entry_type == "string":
             current_dict[entry_keys[-1]] = ""
         else:
@@ -165,7 +165,7 @@ def change_entry(plist_path, entry_path, new_type, silent=False):
                     return
             else:
                 try:
-                    current_value = bytes.fromhex(current_value)
+                    current_value = bytes.fromhex(current_value.decode())
                 except AttributeError:
                     if not silent:
                         print("Cannot convert to data")
