@@ -44,6 +44,8 @@ def add_entry(plist_path, entry_path, entry_type, silent=False):
             current_dict[entry_keys[-1]] = b""
         elif entry_type == "string":
             current_dict[entry_keys[-1]] = ""
+        elif entry_type == "array":
+            current_dict[entry_keys[-1]] = []
         else:
             if not silent:
                 print("Invalid entry type")
@@ -70,9 +72,8 @@ def set_entry(plist_path, entry_path, entry_type, value, silent=False):
         
         existing_type = type(current_dict[entry_keys[-1]]).__name__
         
-        
         if entry_type == "string":
-            current_dict[entry_keys[-1]] = value  # Directly set as a string without type conversion
+            current_dict[entry_keys[-1]] = value
         elif entry_type == "data":
             if existing_type == "str":
                 current_dict[entry_keys[-1]] = value.encode('utf-8')
@@ -106,7 +107,7 @@ def set_entry(plist_path, entry_path, entry_type, value, silent=False):
             elif entry_type == "number":
                 current_dict[entry_keys[-1]] = float(value)
             elif entry_type == "data":
-                current_dict[entry_keys[-1]] = value.encode('utf-8')  # This line handles setting data as a string
+                current_dict[entry_keys[-1]] = value.encode('utf-8')
             else:
                 current_dict[entry_keys[-1]] = value
         
@@ -140,49 +141,52 @@ def change_entry(plist_path, entry_path, new_type, silent=False):
                 print(f"Entry '{entry_path}' is already of type '{new_type}'")
             return
         
-        current_value = current_dict[entry_keys[-1]]
-        if new_type == "bool":
-            try:
-                current_value = current_value.lower() == "true"
-            except AttributeError:
-                if not silent:
-                    print("Cannot convert to bool")
-                return
-        elif new_type == "number":
-            try:
-                current_value = float(current_value)
-            except ValueError:
-                if not silent:
-                    print("Cannot convert to number")
-                return
-        elif new_type == "data":
-            if existing_type == "string":
+        if new_type == "array":
+            current_dict[entry_keys[-1]] = []
+        else:
+            current_value = current_dict[entry_keys[-1]]
+            if new_type == "bool":
                 try:
-                    current_value = current_value.encode('utf-8')
+                    current_value = current_value.lower() == "true"
                 except AttributeError:
                     if not silent:
-                        print("Cannot convert to data")
+                        print("Cannot convert to bool")
+                    return
+            elif new_type == "number":
+                try:
+                    current_value = float(current_value)
+                except ValueError:
+                    if not silent:
+                        print("Cannot convert to number")
+                    return
+            elif new_type == "data":
+                if existing_type == "string":
+                    try:
+                        current_value = current_value.encode('utf-8')
+                    except AttributeError:
+                        if not silent:
+                            print("Cannot convert to data")
+                        return
+                else:
+                    try:
+                        current_value = bytes.fromhex(current_value.decode())
+                    except AttributeError:
+                        if not silent:
+                            print("Cannot convert to data")
+                        return
+            elif new_type == "string":
+                try:
+                    current_value = str(current_value)
+                except ValueError:
+                    if not silent:
+                        print("Cannot convert to string")
                     return
             else:
-                try:
-                    current_value = bytes.fromhex(current_value.decode())
-                except AttributeError:
-                    if not silent:
-                        print("Cannot convert to data")
-                    return
-        elif new_type == "string":
-            try:
-                current_value = str(current_value)
-            except ValueError:
                 if not silent:
-                    print("Cannot convert to string")
+                    print("Invalid entry type")
                 return
-        else:
-            if not silent:
-                print("Invalid entry type")
-            return
-        
-        current_dict[entry_keys[-1]] = current_value
+            
+            current_dict[entry_keys[-1]] = current_value
         
         with open(plist_path, 'wb') as plist_file:
             plistlib.dump(plist_data, plist_file)
