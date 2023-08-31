@@ -1,242 +1,135 @@
 import argparse
 import plistlib
-import os
+from collections.abc import MutableMapping
 
-def delete_entry(plist_path, entry_path, silent=False):
-    try:
-        with open(plist_path, 'rb') as plist_file:
-            plist_data = plistlib.load(plist_file)
-        
-        entry_keys = entry_path.split('.')
-        current_dict = plist_data
-        for key in entry_keys[:-1]:
-            current_dict = current_dict[key]
-        del current_dict[entry_keys[-1]]
-        
-        with open(plist_path, 'wb') as plist_file:
-            plistlib.dump(plist_data, plist_file)
-        
-        if not silent:
-            print(f"Deleted entry '{entry_path}' from '{plist_path}'")
-    except Exception as e:
-        if not silent:
-            print(f"Error: {e}")
+def load_plist(file_path):
+    with open(file_path, 'rb') as plist_file:
+        return plistlib.load(plist_file)
 
-def add_entry(plist_path, entry_path, entry_type, silent=False):
-    try:
-        with open(plist_path, 'rb') as plist_file:
-            plist_data = plistlib.load(plist_file)
-        
-        entry_keys = entry_path.split('.')
-        current_dict = plist_data
-        for key in entry_keys[:-1]:
-            if key not in current_dict:
-                current_dict[key] = {}
-            current_dict = current_dict[key]
-        
-        if entry_type == "dict":
-            current_dict[entry_keys[-1]] = {}
-        elif entry_type == "bool":
-            current_dict[entry_keys[-1]] = False
-        elif entry_type == "number":
-            current_dict[entry_keys[-1]] = 0
-        elif entry_type == "data":
-            current_dict[entry_keys[-1]] = b""
-        elif entry_type == "string":
-            current_dict[entry_keys[-1]] = ""
-        elif entry_type == "array":
-            current_dict[entry_keys[-1]] = []
+def save_plist(file_path, plist_data):
+    with open(file_path, 'wb') as plist_file:
+        plistlib.dump(plist_data, plist_file)
+
+def delete_entry(plist_data, entry_path, silent=False):
+    keys = entry_path.split('.')
+    current_data = plist_data
+    for key in keys[:-1]:
+        current_data = current_data[key]
+    deleted_value = current_data.pop(keys[-1], None)
+    if not silent:
+        if deleted_value is not None:
+            print(f"Entry '{entry_path}' deleted successfully.")
         else:
-            if not silent:
-                print("Invalid entry type")
-            return
-        
-        with open(plist_path, 'wb') as plist_file:
-            plistlib.dump(plist_data, plist_file)
-        
-        if not silent:
-            print(f"Added entry '{entry_path}' with type '{entry_type}' to '{plist_path}'")
-    except Exception as e:
-        if not silent:
-            print(f"Error: {e}")
+            print(f"Entry '{entry_path}' not found.")
 
-def set_entry(plist_path, entry_path, entry_type, value, silent=False):
-    try:
-        with open(plist_path, 'rb') as plist_file:
-            plist_data = plistlib.load(plist_file)
-        
-        entry_keys = entry_path.split('.')
-        current_dict = plist_data
-        for key in entry_keys[:-1]:
-            current_dict = current_dict[key]
-        
-        existing_type = type(current_dict[entry_keys[-1]]).__name__
-        
-        if entry_type == "string":
-            current_dict[entry_keys[-1]] = value
-        elif entry_type == "data":
-            if existing_type == "str":
-                current_dict[entry_keys[-1]] = value.encode('utf-8')
-            elif existing_type == "bytes":
-                try:
-                    current_dict[entry_keys[-1]] = bytes.fromhex(value)
-                except ValueError:
-                    if not silent:
-                        print("Cannot convert to data")
-                    return
-            else:
-                if not silent:
-                    print(f"Error: Existing type '{existing_type}' does not match specified type '{entry_type}'")
-                return
-        elif entry_type != existing_type:
-            if entry_type == "string" and existing_type != "str":
-                if not silent:
-                    print(f"Error: Existing type '{existing_type}' does not match specified type '{entry_type}'")
-                return
-            elif entry_type == "bool":
-                current_dict[entry_keys[-1]] = value.lower() == "true"
-            elif entry_type == "number":
-                current_dict[entry_keys[-1]] = float(value)
-            else:
-                if not silent:
-                    print("Invalid entry type")
-                return
-        else:
-            if entry_type == "bool":
-                current_dict[entry_keys[-1]] = value.lower() == "true"
-            elif entry_type == "number":
-                current_dict[entry_keys[-1]] = float(value)
-            elif entry_type == "data":
-                current_dict[entry_keys[-1]] = value.encode('utf-8')
-            else:
-                current_dict[entry_keys[-1]] = value
-        
-        with open(plist_path, 'wb') as plist_file:
-            plistlib.dump(plist_data, plist_file)
-        
-        if not silent:
-            print(f"Set entry '{entry_path}' to '{value}' with type '{entry_type}' in '{plist_path}'")
-    except Exception as e:
-        if not silent:
-            print(f"Error: {e}")
+def add_entry(plist_data, entry_path, entry_type, silent=False):
+    keys = entry_path.split('.')
+    current_data = plist_data
+    for key in keys[:-1]:
+        if key not in current_data:
+            current_data[key] = {}
+        current_data = current_data[key]
 
-def change_entry(plist_path, entry_path, new_type, silent=False):
-    try:
-        with open(plist_path, 'rb') as plist_file:
-            plist_data = plistlib.load(plist_file)
+    last_key = keys[-1]
+
+    if isinstance(current_data, list) and last_key.isdigit():
+        current_data.append(None)
+        last_key = int(last_key)
+        current_data[last_key] = create_entry(entry_type)
+    else:
+        current_data[last_key] = create_entry(entry_type)
+
+    if not silent:
+        print(f"Entry '{entry_path}' as '{entry_type}' added successfully.")
+
+def create_entry(entry_type):
+    if entry_type == 'dict':
+        return {}
+    elif entry_type == 'bool':
+        return False
+    elif entry_type == 'number':
+        return 0
+    elif entry_type == 'data':
+        return b''
+    elif entry_type == 'string':
+        return ''
+    elif entry_type == 'array':
+        return []
+    else:
+        raise ValueError("Invalid entry type")
         
-        entry_keys = entry_path.split('.')
-        current_dict = plist_data
-        for key in entry_keys[:-1]:
-            current_dict = current_dict[key]
-        
-        if entry_keys[-1] not in current_dict:
-            if not silent:
-                print(f"Error: Entry '{entry_path}' does not exist")
-            return
-        
-        existing_type = type(current_dict[entry_keys[-1]]).__name__
-        if existing_type == new_type:
-            if not silent:
-                print(f"Entry '{entry_path}' is already of type '{new_type}'")
-            return
-        
-        if new_type == "array":
-            current_dict[entry_keys[-1]] = []
+def set_entry(plist_data, entry_path, entry_type, entry_value, silent=False):
+    keys = entry_path.split('.')
+    current_data = plist_data
+    for key in keys[:-1]:
+        current_data = current_data[key]
+
+    if keys[-1] not in current_data:
+        raise ValueError(f"Entry '{entry_path}' does not exist")
+
+    if entry_type == 'bool':
+        if entry_value.lower() == 'true':
+            current_data[keys[-1]] = True
+        elif entry_value.lower() == 'false':
+            current_data[keys[-1]] = False
         else:
-            current_value = current_dict[entry_keys[-1]]
-            if new_type == "bool":
-                try:
-                    current_value = current_value.lower() == "true"
-                except AttributeError:
-                    if not silent:
-                        print("Cannot convert to bool")
-                    return
-            elif new_type == "number":
-                try:
-                    current_value = float(current_value)
-                except ValueError:
-                    if not silent:
-                        print("Cannot convert to number")
-                    return
-            elif new_type == "data":
-                if existing_type == "string":
-                    try:
-                        current_value = current_value.encode('utf-8')
-                    except AttributeError:
-                        if not silent:
-                            print("Cannot convert to data")
-                        return
-                else:
-                    try:
-                        current_value = bytes.fromhex(current_value.decode())
-                    except AttributeError:
-                        if not silent:
-                            print("Cannot convert to data")
-                        return
-            elif new_type == "string":
-                try:
-                    current_value = str(current_value)
-                except ValueError:
-                    if not silent:
-                        print("Cannot convert to string")
-                    return
-            else:
-                if not silent:
-                    print("Invalid entry type")
-                return
-            
-            current_dict[entry_keys[-1]] = current_value
-        
-        with open(plist_path, 'wb') as plist_file:
-            plistlib.dump(plist_data, plist_file)
-        
+            raise ValueError("Invalid bool value")
+    elif entry_type == 'number':
+        current_data[keys[-1]] = float(entry_value)
+    elif entry_type == 'data':
+        current_data[keys[-1]] = bytes.fromhex(entry_value)
+    elif entry_type == 'string':
+        current_data[keys[-1]] = entry_value
+    else:
+        raise ValueError("Invalid entry type")
+
+    if not silent:
+        print(f"Entry '{entry_path}' set as '{entry_value}' of type '{entry_type}' successfully.")
+
+def change_entry_type(plist_data, entry_path, new_type, silent=False):
+    keys = entry_path.split('.')
+    current_data = plist_data
+    for key in keys[:-1]:
+        current_data = current_data[key]
+
+    if keys[-1] not in current_data:
+        raise ValueError(f"Entry '{entry_path}' does not exist")
+
+    current_value = current_data[keys[-1]]
+    new_value = create_entry(new_type)
+    
+    if isinstance(current_value, type(new_value)):
+        current_data[keys[-1]] = new_value
         if not silent:
-            print(f"Changed entry '{entry_path}' to type '{new_type}' in '{plist_path}'")
-    except Exception as e:
+            print(f"Entry '{entry_path}' changed to '{new_type}' type successfully.")
+    else:
         if not silent:
-            print(f"Error: {e}")
+            print(f"Cannot change entry '{entry_path}' to '{new_type}' type. Incompatible types.")
 
 def main():
     parser = argparse.ArgumentParser(description="CLI Plist Editor")
-    parser.add_argument("command", choices=["delete", "add", "set", "change"], help="Command to perform")
+    parser.add_argument("action", choices=["delete", "add", "set", "change"], help="Action to perform")
     parser.add_argument("entry_path", help="Path to the plist entry")
+    parser.add_argument("--type", help="Type of plist entry (for 'add' action)")
+    parser.add_argument("--new_type", help="New type of plist entry (for 'change' action)")
+    parser.add_argument("--value", help="Value of plist entry (for 'set' action)")
     parser.add_argument("--path", required=True, help="Path to the plist file")
-    parser.add_argument("--type", help="Type of plist entry (used for 'add' command)")
-    parser.add_argument("--value", help="Value to set (used for 'set' command)")
-    parser.add_argument("--new_type", help="New type to change the entry to (used for 'change' command)")
-    parser.add_argument("-s", "--silent", action="store_true", help="Suppress output for certain actions")
+    parser.add_argument("-s", "--silent", action="store_true", help="Silent mode (no success messages)")
+
     args = parser.parse_args()
-    
-    if not os.path.exists(args.path):
-        if not args.silent:
-            print(f"Error: Plist file '{args.path}' does not exist")
-        return
-    
-    if args.command == "delete":
-        delete_entry(args.path, args.entry_path, args.silent)
-    elif args.command == "add":
-        if not args.type:
-            if not args.silent:
-                print("Error: You must specify the type for 'add' command")
-            return
-        add_entry(args.path, args.entry_path, args.type, args.silent)
-    elif args.command == "set":
-        if not args.type or not args.value:
-            if not args.silent:
-                print("Error: You must specify the type and value for 'set' command")
-            return
-        set_entry(args.path, args.entry_path, args.type, args.value, args.silent)
-    elif args.command == "change":
-        if not args.new_type:
-            if not args.silent:
-                print("Error: You must specify the new type for 'change' command")
-            return
-        change_entry(args.path, args.entry_path, args.new_type, args.silent)
-    else:
-        if not args.silent:
-            print("Invalid command")
-        return
+
+    plist_data = load_plist(args.path)
+
+    if args.action == 'delete':
+        delete_entry(plist_data, args.entry_path, args.silent)
+    elif args.action == 'add':
+        add_entry(plist_data, args.entry_path, args.type, args.silent)
+    elif args.action == 'set':
+        set_entry(plist_data, args.entry_path, args.type, args.value, args.silent)
+    elif args.action == 'change':
+        change_entry_type(plist_data, args.entry_path, args.new_type, args.silent)
+
+    save_plist(args.path, plist_data)
 
 if __name__ == "__main__":
     main()
