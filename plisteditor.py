@@ -98,13 +98,10 @@ def change_entry_type(plist_data, entry_path, new_type, silent=False):
     current_value = current_data[keys[-1]]
     new_value = create_entry(new_type)
     
-    if isinstance(current_value, type(new_value)):
-        current_data[keys[-1]] = new_value
-        if not silent:
-            print(f"Entry '{entry_path}' changed to '{new_type}' type successfully.")
-    else:
-        if not silent:
-            print(f"Cannot change entry '{entry_path}' to '{new_type}' type. Incompatible types.")
+    current_data[keys[-1]] = new_value
+    if not silent:
+        print(f"Entry '{entry_path}' changed to '{new_type}' type successfully.")
+
 
 def main():
     parser = argparse.ArgumentParser(description="CLI Plist Editor")
