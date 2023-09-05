@@ -2,6 +2,16 @@ import argparse
 import plistlib
 from collections.abc import MutableMapping
 
+entry_types = {
+    "dict": {},
+    "bool": False,
+    "number": 0,
+    "data": b"",
+    "string": "",
+    "array": [],
+}
+
+
 def load_plist(file_path):
     with open(file_path, 'rb') as plist_file:
         return plistlib.load(plist_file)
@@ -43,29 +53,24 @@ def add_entry(plist_data, entry_path, entry_type, silent=False):
         print(f"Entry '{entry_path}' as '{entry_type}' added successfully.")
 
 def create_entry(entry_type):
-    if entry_type == 'dict':
-        return {}
-    elif entry_type == 'bool':
-        return False
-    elif entry_type == 'number':
-        return 0
-    elif entry_type == 'data':
-        return b''
-    elif entry_type == 'string':
-        return ''
-    elif entry_type == 'array':
-        return []
-    else:
+    try:
+        return entry_types[entry_type]
+    except:
         raise ValueError("Invalid entry type")
         
 def set_entry(plist_data, entry_path, entry_type, entry_value, silent=False):
     keys = entry_path.split('.')
     current_data = plist_data
     for key in keys[:-1]:
-        current_data = current_data[key]
+
+        if isinstance(current_data, list):
+            current_data = current_data[int(key)]
+        else:
+            current_data = current_data[key]
 
     if keys[-1] not in current_data:
         raise ValueError(f"Entry '{entry_path}' does not exist")
+
 
     if entry_type == 'bool':
         if entry_value.lower() == 'true':
@@ -120,11 +125,11 @@ def main():
     if args.action == 'delete':
         delete_entry(plist_data, args.entry_path, args.silent)
     elif args.action == 'add':
-        add_entry(plist_data, args.entry_path, args.type, args.silent)
+        add_entry(plist_data, args.entry_path, args.type.lower(), args.silent)
     elif args.action == 'set':
-        set_entry(plist_data, args.entry_path, args.type, args.value, args.silent)
+        set_entry(plist_data, args.entry_path, args.type.lower(), args.value, args.silent)
     elif args.action == 'change':
-        change_entry_type(plist_data, args.entry_path, args.new_type, args.silent)
+        change_entry_type(plist_data, args.entry_path, args.new_type.lower(), args.silent)
 
     save_plist(args.path, plist_data)
 
