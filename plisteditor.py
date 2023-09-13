@@ -37,8 +37,9 @@ def add_entry(plist_data, entry_path, entry_type, silent=False):
     current_data = plist_data
     for key in keys[:-1]:
         if key not in current_data:
-            current_data[key] = {}
-        current_data = current_data[key]
+            current_data = current_data[int(key)]
+        else:
+            current_data = current_data[key]
 
     last_key = keys[-1]
 
