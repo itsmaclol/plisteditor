@@ -5,7 +5,8 @@ from collections.abc import MutableMapping
 entry_types = {
     "dict": {},
     "bool": False,
-    "number": 0,
+    "int": 0,
+    "float": 0.0,
     "data": b"",
     "string": "",
     "array": [],
@@ -80,7 +81,9 @@ def set_entry(plist_data, entry_path, entry_type, entry_value, silent=False):
             current_data[keys[-1]] = False
         else:
             raise ValueError("Invalid bool value")
-    elif entry_type == 'number':
+    elif entry_type == "int":
+        current_data[keys[-1]] = int(entry_value)
+    elif entry_type == 'float':
         current_data[keys[-1]] = float(entry_value)
     elif entry_type == 'data':
         current_data[keys[-1]] = bytes.fromhex(entry_value)
