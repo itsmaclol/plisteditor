@@ -25,4 +25,4 @@ python3 plisteditor.py change path.to.plist.entry --new_type type_of_plist_entry
 # Flags
 The `-s` flag can be used to make the script not output a message after its done running
 
-Made with <3 by Mac
+Made with <3 by Mac, BibiFire
