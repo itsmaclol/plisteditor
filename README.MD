@@ -2,7 +2,7 @@
 
 # Installation
 You can either clone this repo by
-`git clone https://github.com/itsmaclol/plisteditor.git` or download the script from the repo, or download the script from [my cdn](https://cdn.itsmac.eu.org/plisteditor.py)
+`git clone https://github.com/itsmaclol/plisteditor.git` or download the script from the repo
 
 # Examples
 Adding a new plist entry:
