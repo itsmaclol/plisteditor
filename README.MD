@@ -1,4 +1,4 @@
-# CLI Plist Editor in Python3
+# CLI Plist Editor in Python3 - Part of [oc-efi-maker](https://github.com/itsmaclol/oc-efi-maker)
 
 # Installation
 You can either clone this repo by
